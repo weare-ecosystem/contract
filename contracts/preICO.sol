@@ -181,34 +181,24 @@ contract WAEP is MintableToken, BurnableToken {
 contract Crowdsale is Ownable {
     
     using SafeMath for uint;
-    address owner ;
-    address team;
-    address bounty;
     WAEP public token ;
-    uint start;
-    uint end;
-    uint softcapUSD;
-    uint hardcapUSD;
-    uint risedUSD;
-    uint risedTokens;
-    uint hardcapTokens;
+    uint start = 1513339200; //15dec
+    uint end = 1518696000; //15feb
+    uint softcapUSD = 350000*10**18;
+    uint hardcapUSD = 3500000*10**18;
+    uint public risedUSD;
+    uint hardcapTokens = 1000000000*10**18;
     uint oneTokenInWei;
+    uint sale1 = 1000000*10**18;
+    uint sale2 = 2000000*10**18;
+    uint sale3 = 3000000*10**18;
 
     mapping (address => bool) refunded;
     mapping (address => uint256) saleBalances ;  
     function Crowdsale() public{
         owner = msg.sender;
-		softcapUSD = 350000; //usd
-		hardcapUSD = 3500000; //usd
-		hardcapTokens = 1000000000*10**18;
-		oneTokenInWei = 900000000000000; // $1
+		oneTokenInWei = 1532355690402860; // init price $652.59 usd per eth
 		token = new WAEP();
-		
-    }
-    
-    function initParams(uint _from , uint _to ) onlyOwner {
-        start = _from;
-        end   = _to;
     }
     
     function setEthPrice(uint _new) onlyOwner {
@@ -217,29 +207,28 @@ contract Crowdsale is Ownable {
     
     function buyByBot(uint _usd, uint _tokens, address _to) onlyOwner {
         require( risedUSD + _usd < hardcapUSD );
-        risedUSD += _usd;
-        token.mint(_to, _tokens);
+        risedUSD += _usd*10**18;
+        token.mint(_to, _tokens*10**18);
     }
     
     function() external payable {
         require(now > start && now < end);
         require( risedUSD + msg.value.mul(10**18).div(oneTokenInWei) < hardcapUSD );
-        uint discountPrice = oneTokenInWei;
+        uint discountPrice ;
         
-        if ( risedUSD < 1000000 ) {                
+        if ( risedUSD < sale1 ) {                
             discountPrice = oneTokenInWei.div(100).mul(60);
-            }
-        if ( risedUSD < 2000000 ) {                
+        } else if ( risedUSD < sale2 ) {                
             discountPrice = oneTokenInWei.div(100).mul(70);
-            }
-        if ( risedUSD < 3000000 ) {                
+        } else if ( risedUSD < sale3 ) {                
             discountPrice = oneTokenInWei.div(100).mul(80);
-            }
+        } else {
+           discountPrice = oneTokenInWei ;
+        }
 
         uint256 tokenAdd = msg.value.mul(10**18).div(discountPrice);
         require(token.totalSupply() + tokenAdd < hardcapTokens);
         risedUSD += msg.value.mul(10**18).div(oneTokenInWei);
-        
         saleBalances[msg.sender] = saleBalances[msg.sender].add(msg.value);
         token.mint(msg.sender, tokenAdd);
     }
